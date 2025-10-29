@@ -1,0 +1,47 @@
+#!/bin/bash
+
+toggle_sticky()
+{
+	if [ ! -f /tmp/stickied-windows ]; then
+		touch /tmp/stickied-windows
+		echo "$1" >> /tmp/stickied-windows
+		exit 0
+	fi 
+
+	lineNum=$(cat /tmp/stickied-windows | grep -n $1 | cut -d : -f 1)
+
+	if [ -z "$lineNum" ]; then
+		echo "$1" >> /tmp/stickied-windows
+	else 
+		lineNum=$lineNum'd'
+		sed -i "$lineNum" "/tmp/stickied-windows"
+		
+		if [ ! -s /tmp/stickied-windows ];then 
+			pkill stickyd
+			rm /tmp/stickied-windows
+		fi
+	fi 
+}
+
+case $1 in 
+	toggle)
+		if !(pgrep stickyd); then
+			stickyd
+		fi
+		windowId=$(niri msg -j windows | jq '.[] | select(.is_focused == true)' | jq .id)
+		toggle_sticky $windowId
+	;;
+
+	free)
+		lineNum=$(cat /tmp/stickied-windows | grep -n $2 | cut -d : -f 1)
+
+		lineNum=$lineNum'd'
+		sed -i "$lineNum" "/tmp/stickied-windows"
+
+		if [ ! -s /tmp/stickied-windows ];then 
+			rm /tmp/stickied-windows
+		fi
+	;;
+esac
+
+
